@@ -94,7 +94,7 @@ Will expand noweb templates if an 'org-ai-noweb' property or
                       unexpanded-content)))
     content))
 
-(defun org-ai--request-type (info)
+(defun org-ai--get-request-type (info)
   "Look at the header of the #+begin_ai...#+end_ai block.
 returns the type of request. `INFO' is the alist of key-value
 pairs from `org-ai-get-block-info'."
@@ -106,6 +106,16 @@ pairs from `org-ai-get-block-info'."
    ((not (eql 'x (alist-get :sd-image info 'x))) 'sd-image)
    ((not (eql 'x (alist-get :local info 'x))) 'local-chat)
    (t 'chat)))
+
+(cl-defun org-ai--get-sys (&key info default)
+  "Check if :sys exist in #+begin_ai parameters.
+If exist return nil or string, if not exist  return `default'."
+  (let ((sys-raw  (alist-get :sys info 'x)))
+    ;; if 'x - not resent
+    (if (eql 'x sys-raw)
+        default
+      ;; else - nil or string
+      sys-raw)))
 
 (defun org-ai--chat-role-regions ()
   "Splits the special block by role prompts."
@@ -162,8 +172,8 @@ The numeric `ARG' can be used for killing the last n."
   "Takes `CONTENT-STRING' and splits it by [SYS]:, [ME]:, [AI]: and [AI_REASON]: markers.
 If `PERSISTANT-SYS-PROMPTS' is non-nil, [SYS] prompts are
 intercalated. The [SYS] prompt used is either
-`DEFAULT-SYSTEM-PROMPT' or the first [SYS] prompt found in
-`CONTENT-STRING'."
+`DEFAULT-SYSTEM-PROMPT', may be nil to disable, or the first [SYS]
+prompt found in `CONTENT-STRING'."
   (with-temp-buffer
     (erase-buffer)
     (insert content-string)
@@ -223,10 +233,12 @@ intercalated. The [SYS] prompt used is either
                               do (setq last-role role)
                               finally return (reverse result)))
 
+           ;; [SYS] in messages?
            (starts-with-sys-prompt-p (and messages (eql (plist-get (car messages) :role) 'system)))
 
            (sys-prompt (if starts-with-sys-prompt-p
                            (plist-get (car messages) :content)
+                         ;; else
                          default-system-prompt))
 
            (messages (if persistant-sys-prompts

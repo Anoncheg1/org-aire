@@ -1,6 +1,11 @@
-* org-aire
+* org-agent
 Refactored org-ai Emacs package to integrate LLMs APIs to Org mode.
-
+* files
+| File             | Purpose                         |
+|------------------+---------------------------------|
+| org-ai.el        | minor mode for Org and commands |
+| org-ai-block.el  | handling Org block              |
+| org-ai-openai.el | connections handling            |
 * Supported services
 - OpenAI
 - Azure-OpenAI
@@ -84,7 +89,7 @@ par2:
 Example1:
 - file:/home/g/sources/org-ai/org-ai-talk.el::131
 
-Example2 “Remove empty lines”:
+Example2 to remove empty lines after AI answer:
 
 #+begin_src elisp :results none :exports code :eval no
 (require 'org-ai-expand-block)
@@ -94,8 +99,7 @@ Example2 “Remove empty lines”:
       (let* ((context (org-ai-special-block))
              (con-beg (org-element-property :contents-begin context))
              (con-end (org-element-property :contents-end context)))
-        (org-ai-remove-distant-empty-lines con-beg con-end)))
-  )
+        (org-ai-remove-distant-empty-lines con-beg con-end))))
 
 (add-hook 'org-ai-after-chat-insertion-hook #'my/ai-postprocess)
 #+end_src

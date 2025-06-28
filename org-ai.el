@@ -21,7 +21,10 @@
 ;; - TODO: where in org-ai-expand-block is it really what will be send? check corectness of roles with json
 ;; - TODO: Guide to add custom functions for text post-processing.
 ;; - TODO: provide ability to replace url-http with plz or org-ai-openai with llm(plz)
+;; - TODO: Org properties extraction in separate function.
+;;
 ;;; License
+
 ;; This file is NOT part of GNU Emacs.
 
 ;; org-ai.el is free software: you can redistribute it and/or modify
@@ -129,12 +132,13 @@ result."
   (let* ((context (org-ai-special-block)) ; org-ai-block.el
          (info (org-ai-get-block-info context)) ; org-ai-block.el
          (content (org-ai-get-block-content context)) ; org-ai-block.el
-         (req-type (org-ai--request-type info)) ; org-ai-block.el
+         (req-type (org-ai--get-request-type info)) ; org-ai-block.el
          (sys-prompt-for-all-messages (or (not (eql 'x (alist-get :sys-everywhere info 'x)))
                                           (org-entry-get-with-inheritance "SYS-EVERYWHERE") ; org
                                           org-ai-default-inject-sys-prompt-for-all-messages)) ; org-ai-openai.el
-         (default-system-prompt (or (org-entry-get-with-inheritance "SYS") ; org
-                                    org-ai-default-chat-system-prompt))) ; org-ai-openai.el variable
+         (sys-prompt (or (org-entry-get-with-inheritance "SYS") ; org
+                                    (org-ai--get-sys :info info ; org-ai-block.el
+                                                     :default org-ai-default-chat-system-prompt)))) ; org-ai-openai.el variable
     (cl-case req-type
       (completion (org-ai-stream-completion :prompt content ; org-ai-openai.el
                                             :context context))
@@ -148,7 +152,7 @@ result."
       ;; by default:
       (t (org-ai-stream-completion :messages (org-ai--collect-chat-messages ; org-ai-openai
                                               content
-                                              default-system-prompt
+                                              sys-prompt
                                               sys-prompt-for-all-messages)
                                    :context context)))))
 
